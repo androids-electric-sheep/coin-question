@@ -107,12 +107,15 @@ class TCPSocketHandler(socketserver.BaseRequestHandler):
     def handle(self):
         self.run_game()
 
+
 def main() -> None:
     cli_args = cli.parse_args()
-    logger.info('Binding to host and port', host=cli_args.host, port=cli_args.port)
-    with socketserver.TCPServer((cli_args.host, cli_args.port), TCPSocketHandler) as server:
+    logger.info("Binding to host and port", host=cli_args.host, port=cli_args.port)
+    with socketserver.TCPServer(
+        (cli_args.host, cli_args.port), TCPSocketHandler
+    ) as server:
         server.serve_forever()
+
 
 if __name__ == "__main__":
     main()
-
