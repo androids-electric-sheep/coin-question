@@ -13,6 +13,10 @@ logger = structlog.get_logger()
 class TCPSocketHandler(socketserver.BaseRequestHandler):
 
     def get_coin_total(self, coin_list: list[int]) -> int:
+        """
+        Add up coin weights, checking for any invalid values or 
+        if we've hit upon the faulty coin which weighs 9 instead of 10
+        """
         total = 0
         for entry in coin_list:
             if entry < 0 or entry >= self.game_size:
@@ -25,6 +29,9 @@ class TCPSocketHandler(socketserver.BaseRequestHandler):
         return total
 
     def read_line(self) -> bytes:
+        """
+        Read a line from the socket until we reach a newline
+        """
         line = b""
         while True:
             part = self.request.recv(1)
