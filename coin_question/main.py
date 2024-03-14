@@ -43,8 +43,8 @@ class TCPSocketHandler(socketserver.BaseRequestHandler):
                 int(i) for i in submission.decode("utf-8").replace(" ", "").split(",")
             ]
             return index_list
-        except:
-            logger.warning("Unable to process submission properly")
+        except Exception as e:
+            logger.warning("Unable to process submission properly", exception=str(e))
             return None
 
     def run_game(self) -> None:
