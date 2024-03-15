@@ -5,7 +5,7 @@ from . import game
 
 
 def generate_game_socket_handler(
-    game_size: int, faulty_coin: int
+    game_size: int, faulty_coin: int | None = None
 ) -> type[socketserver.BaseRequestHandler]:
     class GameSocketHandler(socketserver.BaseRequestHandler):
         def handle(self) -> None:

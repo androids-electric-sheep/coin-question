@@ -16,7 +16,11 @@ def parse_args() -> argparse.Namespace:
     )
     args = parser.parse_args()
 
-    if args.faulty_coin is not None:
+    # Validate cli arguments make sense
+    if args.game_size < 1:
+        raise ValueError("Game size must be greater than one")
+    elif args.faulty_coin is not None:
         if args.faulty_coin < 0 or args.faulty_coin >= args.game_size:
             raise ValueError("Faulty coin must be indexed between 0 and game-size")
+
     return args

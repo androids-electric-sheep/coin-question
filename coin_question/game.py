@@ -1,4 +1,5 @@
 import math
+import random
 import socket
 
 import structlog
@@ -10,11 +11,18 @@ logger = structlog.get_logger()
 
 class CoinGame:
     def __init__(
-        self, game_id: str, sock: socket.socket, game_size: int, faulty_coin: int
+        self,
+        game_id: str,
+        sock: socket.socket,
+        game_size: int,
+        faulty_coin: int | None = None,
     ) -> None:
         self.game_id = game_id
         self.sock = sock
         self.game_size = game_size
+
+        if faulty_coin is None:
+            faulty_coin = random.randint(0, self.game_size - 1)
         self.faulty_coin = faulty_coin
 
         logger.info(
