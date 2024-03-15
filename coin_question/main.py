@@ -14,7 +14,7 @@ class TCPSocketHandler(socketserver.BaseRequestHandler):
 
     def get_coin_total(self, coin_list: list[int]) -> int:
         """
-        Add up coin weights, checking for any invalid values or 
+        Add up coin weights, checking for any invalid values or
         if we've hit upon the faulty coin which weighs 9 instead of 10
         """
         total = 0
@@ -94,6 +94,7 @@ class TCPSocketHandler(socketserver.BaseRequestHandler):
                 # Successful guess
                 self.request.sendall(b"Success!\n")
                 self.finish()
+                logger.info("Game successfully finished", game_id=self.game_id)
                 return
 
             submission_coin_total = self.get_coin_total(index_list)
@@ -109,6 +110,7 @@ class TCPSocketHandler(socketserver.BaseRequestHandler):
 
         self.request.sendall(b"Failed!\n")
         self.finish()
+        logger.info("Game ended in failure", game_id=self.game_id)
         return
 
     def handle(self):
