@@ -15,12 +15,14 @@ def main() -> None:
     cli_args = cli.parse_args()
     logger.info("Binding to host and port", host=cli_args.host, port=cli_args.port)
 
-    game_size = random.randint(100, 1_000_000)
-    faulty_coin = random.randint(0, game_size)
-    socket_handler = game_socket_handler.generate_game_socket_handler(
-        game_size, faulty_coin
-    )
+    # Random faulty coin if not set on CLI
+    faulty_coin = cli_args.faulty_coin
+    if not faulty_coin:
+        faulty_coin = random.randint(0, cli_args.game_size)
 
+    socket_handler = game_socket_handler.generate_game_socket_handler(
+        cli_args.game_size, faulty_coin
+    )
     with socketserver.TCPServer(
         (cli_args.host, cli_args.port), socket_handler
     ) as server:
