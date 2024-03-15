@@ -11,12 +11,28 @@ from . import cli
 logger = structlog.get_logger()
 
 
+def read_line(sock: socket.socket) -> bytes:
+    """
+    Read a line from the socket until we reach a newline
+    """
+    line = b""
+    while True:
+        part = sock.recv(1)
+        if part == b"":
+            break
+        elif part != b"\n":
+            line += part
+        elif part == b"\n":
+            break
+    return line
+
+
 class CoinGame:
     def __init__(
-        self, game_id: str, socket: socket.socket, game_size: int, faulty_coin: int
+        self, game_id: str, sock: socket.socket, game_size: int, faulty_coin: int
     ) -> None:
         self.game_id = game_id
-        self.socket = socket
+        self.sock = sock
         self.game_size = game_size
         self.faulty_coin = faulty_coin
 
@@ -43,21 +59,6 @@ class CoinGame:
                 total += 10
         return total
 
-    def read_line(self) -> bytes:
-        """
-        Read a line from the socket until we reach a newline
-        """
-        line = b""
-        while True:
-            part = self.socket.recv(1)
-            if part == b"":
-                break
-            elif part != b"\n":
-                line += part
-            elif part == b"\n":
-                break
-        return line
-
     @staticmethod
     def process_submission(submission: bytes) -> list[int] | None:
         try:
@@ -70,14 +71,14 @@ class CoinGame:
             return None
 
     def run_game(self) -> None:
-        self.socket.sendall(
+        self.sock.sendall(
             f"Starting the game, the game size is {self.game_size} and coins are zero-indexed\n".encode(
                 "utf-8"
             )
         )
 
         max_guesses = math.floor(math.log2(self.game_size)) + 1
-        self.socket.sendall(
+        self.sock.sendall(
             f"You have a maximum of {max_guesses} guesses. Enter 'quit' to exit\n".encode(
                 "utf-8"
             )
@@ -85,10 +86,10 @@ class CoinGame:
 
         guess_count = 0
         while guess_count < max_guesses:
-            self.socket.sendall(
+            self.sock.sendall(
                 b"Input your list of coins, or a single index for a guess: "
             )
-            current_submission = self.read_line()
+            current_submission = read_line(self.sock)
             if len(current_submission) == 0:
                 logger.error("Closed", game_id=self.game_id)
                 break
@@ -102,12 +103,12 @@ class CoinGame:
                 logger.error(
                     "Unable to process submission", submission=current_submission
                 )
-                self.socket.sendall(b"Invalid submission, try again\n")
+                self.sock.sendall(b"Invalid submission, try again\n")
                 continue
 
             if len(index_list) == 1 and index_list[0] == self.faulty_coin:
                 # Successful guess
-                self.socket.sendall(b"Success!\n")
+                self.sock.sendall(b"Success!\n")
                 logger.info("Game successfully finished", game_id=self.game_id)
                 return
 
@@ -116,13 +117,13 @@ class CoinGame:
                 # Invalid submission, try again
                 error_message = "Invalid coin values submitted, unable to process"
                 logger.error(error_message, guess_count=guess_count)
-                self.socket.sendall(error_message.encode("utf-8") + b"\n")
+                self.sock.sendall(error_message.encode("utf-8") + b"\n")
                 continue
 
-            self.socket.sendall(f"{submission_coin_total}\n".encode("utf-8"))
+            self.sock.sendall(f"{submission_coin_total}\n".encode("utf-8"))
             guess_count += 1
 
-        self.socket.sendall(b"Failed!\n")
+        self.sock.sendall(b"Failed!\n")
         logger.info("Game ended in failure", game_id=self.game_id)
 
 
@@ -133,7 +134,7 @@ class TCPSocketHandler(socketserver.BaseRequestHandler):
         faulty_coin = random.randint(0, game_size)
         self.game = CoinGame(
             game_id=game_id,
-            socket=self.request,
+            sock=self.request,
             game_size=game_size,
             faulty_coin=faulty_coin,
         )
