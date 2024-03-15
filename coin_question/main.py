@@ -128,7 +128,7 @@ class TCPSocketHandler(socketserver.BaseRequestHandler):
         logger.info("Game ended in failure", game_id=self.game.game_id)
         return
 
-    def handle(self):
+    def handle(self) -> None:
         self.run_game()
 
 
