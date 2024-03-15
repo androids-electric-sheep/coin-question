@@ -70,7 +70,7 @@ class CoinGame:
             logger.warning("Unable to process submission properly", exception=str(e))
             return None
 
-    def run_game(self) -> None:
+    def run(self) -> None:
         self.sock.sendall(
             f"Starting the game, the game size is {self.game_size} and coins are zero-indexed\n".encode(
                 "utf-8"
@@ -106,11 +106,18 @@ class CoinGame:
                 self.sock.sendall(b"Invalid submission, try again\n")
                 continue
 
-            if len(index_list) == 1 and index_list[0] == self.faulty_coin:
-                # Successful guess
-                self.sock.sendall(b"Success!\n")
-                logger.info("Game successfully finished", game_id=self.game_id)
-                return
+            if len(index_list) == 1:
+                if index_list[0] == self.faulty_coin:
+                    # Successful guess
+                    self.sock.sendall(b"Success!\n")
+                    logger.info("Game successfully finished", game_id=self.game_id)
+                    return
+                else:
+                    logger.info(
+                        "Incorrect guess received",
+                        game_id=self.game_id,
+                        guess_index=index_list[0],
+                    )
 
             submission_coin_total = self.get_coin_total(index_list)
             if submission_coin_total == -1:
@@ -138,7 +145,7 @@ class TCPSocketHandler(socketserver.BaseRequestHandler):
             game_size=game_size,
             faulty_coin=faulty_coin,
         )
-        self.game.run_game()
+        self.game.run()
         self.finish()
 
 
