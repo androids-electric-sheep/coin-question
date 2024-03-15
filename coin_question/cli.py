@@ -12,7 +12,10 @@ def parse_args() -> argparse.Namespace:
         help="Number of coins to include in the game",
     )
     parser.add_argument(
-        "--faulty-coin", type=int, required=False, help="Coin to mark as the faulty one"
+        "--faulty-coin",
+        type=int,
+        required=False,
+        help="Coin to mark as the faulty one, must be [0, game_size)",
     )
     args = parser.parse_args()
 
