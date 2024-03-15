@@ -41,7 +41,6 @@ class CoinGame:
 
 
 class TCPSocketHandler(socketserver.BaseRequestHandler):
-
     def read_line(self) -> bytes:
         """
         Read a line from the socket until we reach a newline
@@ -79,7 +78,9 @@ class TCPSocketHandler(socketserver.BaseRequestHandler):
 
         max_guesses = math.floor(math.log2(game_size)) + 1
         self.request.sendall(
-            f"You have a maximum of {max_guesses} guesses. Enter 'quit' to exit\n".encode("utf-8")
+            f"You have a maximum of {max_guesses} guesses. Enter 'quit' to exit\n".encode(
+                "utf-8"
+            )
         )
 
         guess_count = 0
