@@ -17,7 +17,7 @@ def main() -> None:
 
     # Random faulty coin if not set on CLI
     faulty_coin = cli_args.faulty_coin
-    if not faulty_coin:
+    if faulty_coin is None:
         faulty_coin = random.randint(0, cli_args.game_size)
 
     socket_handler = game_socket_handler.generate_game_socket_handler(
