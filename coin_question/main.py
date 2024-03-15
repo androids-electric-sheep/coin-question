@@ -61,6 +61,13 @@ class CoinGame:
 
     @staticmethod
     def process_submission(submission: bytes) -> list[int] | None:
+        """
+        Expecting submission to be a comma (and possibly space) separated list of indices
+        with the range 0 <= x < self.game_size
+
+        This converts the bytes socket output into this format or returns None if the
+        submission is invalid
+        """
         try:
             index_list = [
                 int(i) for i in submission.decode("utf-8").replace(" ", "").split(",")
@@ -71,6 +78,12 @@ class CoinGame:
             return None
 
     def run(self) -> None:
+        """
+        The main game loop
+
+        Receives submissions until the max guess limit, the user quits or a correct
+        guess is input
+        """
         self.sock.sendall(
             f"Starting the game, the game size is {self.game_size} and coins are zero-indexed\n".encode(
                 "utf-8"
@@ -134,8 +147,12 @@ class CoinGame:
         logger.info("Game ended in failure", game_id=self.game_id)
 
 
-class TCPSocketHandler(socketserver.BaseRequestHandler):
+class GameSocketHandler(socketserver.BaseRequestHandler):
     def handle(self) -> None:
+        """
+        Construct an instance of the game connected to this socket
+        and run the game loop
+        """
         game_id = uuid.uuid4().hex
         game_size = random.randint(100, 1_000_000)
         faulty_coin = random.randint(0, game_size)
@@ -150,10 +167,13 @@ class TCPSocketHandler(socketserver.BaseRequestHandler):
 
 
 def main() -> None:
+    """
+    Main entrypoint
+    """
     cli_args = cli.parse_args()
     logger.info("Binding to host and port", host=cli_args.host, port=cli_args.port)
     with socketserver.TCPServer(
-        (cli_args.host, cli_args.port), TCPSocketHandler
+        (cli_args.host, cli_args.port), GameSocketHandler
     ) as server:
         server.serve_forever()
 
