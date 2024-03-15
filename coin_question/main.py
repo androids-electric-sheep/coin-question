@@ -10,7 +10,18 @@ from . import cli
 logger = structlog.get_logger()
 
 
-class TCPSocketHandler(socketserver.BaseRequestHandler):
+class CoinGame:
+    def __init__(self, game_id: str, game_size: int, faulty_coin: int) -> None:
+        self.game_id = game_id
+        self.game_size = game_size
+        self.faulty_coin = faulty_coin
+
+        logger.info(
+            "Creating game",
+            game_id=self.game_id,
+            game_size=self.game_size,
+            faulty_coin=self.faulty_coin,
+        )
 
     def get_coin_total(self, coin_list: list[int]) -> int:
         """
@@ -27,6 +38,9 @@ class TCPSocketHandler(socketserver.BaseRequestHandler):
             else:
                 total += 10
         return total
+
+
+class TCPSocketHandler(socketserver.BaseRequestHandler):
 
     def read_line(self) -> bytes:
         """
@@ -55,30 +69,30 @@ class TCPSocketHandler(socketserver.BaseRequestHandler):
             return None
 
     def run_game(self) -> None:
-        self.game_id = uuid.uuid4().hex
-        self.game_size = random.randint(100, 1_000_000)
-        self.faulty_coin = random.randint(0, self.game_size)
-        logger.info(
-            "Starting game",
-            game_id=self.game_id,
-            game_size=self.game_size,
-            faulty_coin=self.faulty_coin,
-        )
+        game_size = random.randint(100, 1_000_000)
+        self.game = CoinGame(uuid.uuid4().hex, game_size, random.randint(0, game_size))
         self.request.sendall(
-            f"Starting the game, the game size is {self.game_size} and coins are zero-indexed\n".encode(
+            f"Starting the game, the game size is {game_size} and coins are zero-indexed\n".encode(
                 "utf-8"
             )
         )
 
-        self.max_guesses = math.floor(math.log2(self.game_size)) + 1
+        max_guesses = math.floor(math.log2(game_size)) + 1
+        self.request.sendall(
+            f"You have a maximum of {max_guesses} guesses\n".encode("utf-8")
+        )
+
         guess_count = 0
-        while guess_count < self.max_guesses:
+        while guess_count < max_guesses:
             self.request.sendall(
                 b"Input your list of coins, or a single index for a guess: "
             )
             current_submission = self.read_line()
             if len(current_submission) == 0:
-                logger.error("Closed")
+                logger.error("Closed", game_id=self.game.game_id)
+                break
+            elif current_submission == b"quit":
+                logger.error("Quitting", game_id=self.game.game_id)
                 break
 
             index_list = self.process_submission(current_submission)
@@ -90,14 +104,14 @@ class TCPSocketHandler(socketserver.BaseRequestHandler):
                 self.request.sendall(b"Invalid submission, try again\n")
                 continue
 
-            if len(index_list) == 1 and index_list[0] == self.faulty_coin:
+            if len(index_list) == 1 and index_list[0] == self.game.faulty_coin:
                 # Successful guess
                 self.request.sendall(b"Success!\n")
                 self.finish()
-                logger.info("Game successfully finished", game_id=self.game_id)
+                logger.info("Game successfully finished", game_id=self.game.game_id)
                 return
 
-            submission_coin_total = self.get_coin_total(index_list)
+            submission_coin_total = self.game.get_coin_total(index_list)
             if submission_coin_total == -1:
                 # Invalid submission, try again
                 error_message = "Invalid coin values submitted, unable to process"
@@ -110,7 +124,7 @@ class TCPSocketHandler(socketserver.BaseRequestHandler):
 
         self.request.sendall(b"Failed!\n")
         self.finish()
-        logger.info("Game ended in failure", game_id=self.game_id)
+        logger.info("Game ended in failure", game_id=self.game.game_id)
         return
 
     def handle(self):
